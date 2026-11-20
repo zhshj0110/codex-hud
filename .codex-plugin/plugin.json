@@ -1,0 +1,13 @@
+{
+  "name": "codex-hud",
+  "version": "0.1.0",
+  "description": "Status line HUD for the Codex CLI footer: model, git, context, rate limits, tools and agent state.",
+  "license": "MIT",
+  "keywords": ["statusline", "status-line", "hud", "footer", "tui"],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "codex-hud",
+    "shortDescription": "claude-hud style status line for the Codex CLI footer",
+    "category": "Developer Tools"
+  }
+}

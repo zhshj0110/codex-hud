@@ -1,0 +1,17 @@
+{
+  "name": "codex-hud",
+  "version": "0.1.0",
+  "description": "A claude-hud style status line for the Codex CLI, built on Codex's MCP statusline provider API",
+  "type": "module",
+  "main": "hud.mjs",
+  "bin": { "codex-hud": "hud.mjs" },
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "preview": "node hud.mjs --preview",
+    "doctor": "node hud.mjs --doctor",
+    "test": "node --test test/*.test.mjs",
+    "install-hud": "node install.mjs",
+    "uninstall-hud": "node install.mjs --uninstall"
+  },
+  "license": "MIT"
+}

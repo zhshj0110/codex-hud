@@ -1,0 +1,16 @@
+{
+  "segments": ["model", "project", "context", "limits", "cost"],
+  "barWidth": 8,
+  "icons": false,
+  "allLimits": false,
+  "showGitCounts": true,
+  "showCacheRate": true,
+  "showLastCommand": true,
+  "showPlanCurrent": true,
+  "maxTools": 3,
+  "lastCommandWidth": 32,
+  "planCurrentWidth": 24,
+  "titleWidth": 32,
+  "warn": 70,
+  "danger": 90
+}
