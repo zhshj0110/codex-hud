@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-`codex-hud` 是一个给 Codex CLI 使用的紧凑型状态栏 HUD，思路参考 [claude-hud](https://github.com/jarrodwatts/claude-hud) 和 [agy-hud](https://github.com/franksde/agy-hud)。它在终端 TUI 的 footer 里原生渲染，零第三方运行依赖，只需要 Node.js 18+。
+`codex-hud` 是一个给 Codex CLI 使用的紧凑型状态栏 HUD，思路参考 [claude-hud](https://github.com/jarrodwatts/claude-hud) 和 [agy-hud](https://github.com/franksde/agy-hud)。它在 Codex TUI 的 footer 里渲染，只需要 Node.js 18+，不用执行 `npm install`。
 
 **默认状态栏（`"icons": false`）**
 
@@ -10,24 +10,22 @@
 gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
 
-默认以纯文字显示模型和项目名，并使用 `⎇`、`↻` 等 Unicode 符号。模型、Git 状态、上下文用量和额度随会话变化。模型和文件夹图标可通过[开启 Nerd Font 图标](#图标显示成方块)显示。
+默认以纯文字显示模型和项目名，并使用 `⎇`、`↻` 等 Unicode 符号。模型和文件夹图标见[图标显示成方块](#图标显示成方块)。
 
 ## 运行要求
 
-- **Codex CLI 0.171.0 或更高版本**，并支持实验特性 `tui_extensions_statusline`。已在 `codex-cli 0.171.0` 上验证。
-- **Node.js 18+**。安装脚本会注册运行它的那个 `node` 的绝对路径；插件则使用 Codex 启动时 `PATH` 上的 `node`（见[找不到 Node](#找不到-node)）。
-- **macOS、Linux、WSL 或 Windows**。macOS / Linux / WSL 支持以 Codex 插件或安装脚本安装；Windows 请使用安装脚本。
-- **Nerd Font 字体（可选）**。默认关闭 Nerd Font 图标（`"icons": false`），使用标准 Unicode 字符，不依赖任何字体即可正常显示。如果你开启了 `"icons": true` 但终端没有配置 Nerd Font，图标会显示成方块或 `?`——详见[图标显示成方块](#图标显示成方块)。
-
-`codex-hud` 零第三方运行依赖，无需执行 `npm install`。
+- **Codex CLI 0.171.0 或更高版本**，并开启实验特性 `tui_extensions_statusline`。
+- **Node.js 18+**（见[找不到 Node](#找不到-node)）。
+- **macOS、Linux、WSL 或 Windows**。
+- **Nerd Font 字体（可选）**。默认 `"icons": false` 使用纯 Unicode，任何字体都能显示。`"icons": true` 需要终端配置 Nerd Font。
 
 ## 安装
 
-提供两种安装方式，二选一即可。如果 Codex 插件已经安装，安装脚本会拒绝执行；两种方式同时存在时，`--doctor` 会给出警告。
+两种方式选一种。已装 Codex 插件时 `install.mjs` 会拒绝执行，重复注册时 `--doctor` 会报出来。
 
 ### 方式一：Codex 插件（macOS / Linux / WSL）
 
-本仓库本身就是一个 Codex 插件 marketplace（`.agents/plugins/marketplace.json`、`.codex-plugin/plugin.json`、`.mcp.json`），与 `claude-hud` 作为 Claude Code 插件发布类似：
+本仓库本身也是一个 Codex 插件 marketplace：
 
 ```sh
 codex plugin marketplace add zhshj0110/codex-hud   # 或本地 clone：codex plugin marketplace add ~/codex-hud
@@ -35,17 +33,15 @@ codex plugin add codex-hud@codex-hud
 codex features enable tui_extensions_statusline
 ```
 
-**重要：安装完成后，请启动 Codex 并在 TUI 中手动选中一次 provider：**
+然后启动 Codex，选中一次 provider：
 
 ```text
 /statusline → Choose a status line provider → codex-hud · codex-hud@codex-hud
 ```
 
-插件无法自行开启实验特性，也无法把自己设成当前状态栏 provider，因此这两步需要手动执行一次（类似 `agy-hud` 安装后需要运行一次 `/statusline`）。
+插件不能自己开启特性，也不能把自己设为 provider，所以这两步要手动做。
 
-- 插件在插件目录下以 `node ./hud.mjs` 启动 server，因此 Codex 启动时的 `PATH` 上必须有 `node`（18+）。从能正常运行 `node` 的 shell 里启动 Codex 时通常没问题，否则请使用方式二。
-- Codex 启动 MCP server 时只传递极少数环境变量，因此 `.mcp.json` 会显式透传 `HOME`、`PATH`、`CODEX_HOME`、`XDG_CONFIG_HOME` 以及 `CODEX_HUD_*` 变量。
-- **Windows：** 插件方式尚未在 Windows 上测试，请使用方式二（安装脚本）。
+插件运行 `node ./hud.mjs`，Codex 启动时的 `PATH` 上要有 `node`，否则请用方式二。插件方式没在 Windows 上测过，Windows 也请用方式二。
 
 ### 方式二：安装脚本（全平台，含 Windows）
 
@@ -61,13 +57,13 @@ git clone https://github.com/zhshj0110/codex-hud.git "$HOME\codex-hud"
 node "$HOME\codex-hud\install.mjs"
 ```
 
-安装脚本会先把 `config.toml` 备份为 `config.toml.before-codex-hud.<时间>`，然后完成三步：
+安装脚本会先把 `config.toml` 备份为 `config.toml.before-codex-hud.<时间>`，然后：
 
 1. 执行 `codex features enable tui_extensions_statusline`。
 2. 注册 `codex-hud` MCP server，命令为 `<node> <仓库>/hud.mjs`，其中 `<node>` 是运行安装脚本的 Node.js 的绝对路径，因此 Codex 的精简 `PATH` 里不需要有 `node`。如需注册另一个 Node，用它来运行脚本即可，例如 `/opt/homebrew/bin/node ~/codex-hud/install.mjs`。
 3. 在 `[tui]` 下写入 `status_line_provider = { server = "codex-hud", tool = "statusline" }`。如果希望之后自己在 `/statusline` 里选择，可加 `--no-select`。
 
-配置写入采用同目录临时文件加原子 `rename`，保留原文件权限，并用 `codex features list` 校验结果。若修改配置后的步骤失败，脚本会自动从备份恢复（或清理本次新建的配置）。如果 `[tui]` 使用了不支持的写法（`[tui.status_line_provider]` 子表、顶层 `tui.xxx =` 点号键、多行的 `status_line_provider`），脚本会在改动任何文件前中止，并提示改用 `--no-select`。
+某一步失败时，脚本会从备份恢复。如果 `[tui]` 的写法它改不了（`[tui.status_line_provider]` 子表、顶层 `tui.xxx =` 点号键、多行的 `status_line_provider`），脚本不做任何改动直接退出。此时加 `--no-select` 重跑，再到 `/statusline` 里选中 `codex-hud`。
 
 装好后重开一个 Codex 会话即可看到状态栏。
 
@@ -86,9 +82,9 @@ node "$HOME\codex-hud\install.mjs"
   cd ~/codex-hud && git pull
   ```
 
-  注册的 MCP server 直接运行本地仓库中的 `hud.mjs`，拉取更新后重开 Codex 会话即可生效，无需重跑 `install.mjs`。只有在修改了 `CODEX_HOME` 等环境变量，或卸载了注册时使用的 Node 版本后，才需要重跑。
+  注册的 server 直接运行本地仓库里的 `hud.mjs`，拉取后重开 Codex 会话即生效。只有改了 `CODEX_HOME` 等变量，或卸载了注册时用的 Node 版本，才需要重跑 `install.mjs`。
 
-用户配置文件独立存放在 `~/.config/codex-hud/config.json`，升级或重装都不会覆盖它。
+[配置文件](#配置)不在仓库里，升级不会动它。
 
 ## 卸载
 
@@ -116,28 +112,24 @@ node "$HOME\codex-hud\install.mjs"
 
 ## 图标显示成方块
 
-`codex-hud` 默认使用纯 Unicode 字符（`"icons": false`），在任何终端下都无需安装特殊字体。
+开启 `"icons": true` 后，`model`、`folder`、`branch`、`mode`、`tools`、`plan`、`edit`、`clock`、`reset` 和 `fast` 会使用 Nerd Font 字形。字体里没有这些字形时，会显示成方块或 `?`。
 
-开启 `"icons": true` 后，状态栏会为 `model`、`folder`、`branch`、`mode`、`tools`、`plan`、`edit`、`clock`、`reset` 和 `fast` 使用 Nerd Font 私有区字形。如果终端字体不包含这些字形，它们就会显示成方块或 `?`。
-
-运行内置诊断：
+在你运行 Codex 的终端里执行诊断：
 
 ```sh
 node hud.mjs --doctor
 ```
 
-它会打印一行 **Plain Unicode 与 Nerd Font 对比探针**。**请直接在你运行 Codex 的终端里肉眼查看这行探针**——终端不会回传自己实际画出了什么字形，没有任何程序能替你判断屏幕上看到的是图标还是方块。
+它会打印纯 Unicode 和 Nerd Font 两行。终端不会回报实际画出了什么字形，所以要自己看 `nerd` 那一行。如果显示方块、`?` 或空白，二选一：
 
-如果 `nerd` 行显示方块、`?` 或空白，二选一：
-
-**A. 保持或切回纯 Unicode（默认）。** 到处可用，5 秒内自动生效，不需要任何字体：
+**A. 用纯 Unicode。** 在[配置文件](#配置)里设置 `"icons": false`，保留其他键。还没有配置文件时：
 
 ```sh
 mkdir -p ~/.config/codex-hud
-echo '{"icons": false}' > ~/.config/codex-hud/config.json   # 文件已存在时请将该键合并进去
+echo '{"icons": false}' > ~/.config/codex-hud/config.json
 ```
 
-Windows 请使用 PowerShell（`cmd.exe` 没有 `mkdir -p`，而 Windows PowerShell 5.1 的 `>` 会写入 UTF-16，导致 JSON 解析失败）：
+Windows（PowerShell）：
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "~\.config\codex-hud" | Out-Null
@@ -147,18 +139,18 @@ Set-Content -Encoding ascii -Path "~\.config\codex-hud\config.json" -Value '{"ic
 **B. 开启 Nerd Font 图标。**
 
 1. 安装 Nerd Font，例如 macOS 上运行 `brew install --cask font-hack-nerd-font`，Windows 上从 <https://www.nerdfonts.com> 下载 Hack Nerd Font。
-2. 把终端 profile 的字体指向该字族（如 iTerm2 → Settings → Profiles → Text → Font、VS Code 的 `terminal.integrated.fontFamily`、`~/.config/ghostty/config` 中的 `font-family`、Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face）。Ghostty、WezTerm、kitty 自带 Nerd Font 符号回退，通常开箱即可显示。
-3. 在 [HUD 配置](#配置)中设置 `"icons": true`。状态栏会在 5 秒内重新加载设置。
+2. 把终端 profile 的字体指向该字族（如 iTerm2 → Settings → Profiles → Text → Font、VS Code 的 `terminal.integrated.fontFamily`、`~/.config/ghostty/config` 中的 `font-family`、Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face）。Ghostty、WezTerm、kitty 自带 Nerd Font 符号回退。
+3. 在[配置文件](#配置)中设置 `"icons": true`。
 
 <img src="assets/preview.png" alt="开启 Nerd Font 图标后的 Codex 状态栏" width="700">
 
-在 SSH 会话里，字形由你**本地**机器上的终端绘制，在远端主机装字体不起任何作用。请在本地按方案 B 配置，或在远端保持 `"icons": false`。
+SSH 下字形由本地终端绘制，在远端主机装字体没有用。
 
 ## 找不到 Node
 
-Codex 启动 MCP server 时只传递精简环境（`HOME` 和 `PATH`，通常不加载 `.zshrc` / `.bashrc`）。具体影响取决于安装方式。
+Codex 启动 MCP server 时只传递精简环境（`HOME` 和 `PATH`，不加载 `.zshrc` / `.bashrc`）。
 
-**安装脚本。** server 注册的是运行 `install.mjs` 的 `node` 的绝对路径，与 `PATH` 无关。但如果这个 `node` 来自版本管理器（nvm、fnm、Volta、mise、asdf、nodenv 或 n），路径会指向某个具体的 Node 版本目录，卸载该版本后状态栏就会失效。可以在切换版本后用新的 Node 重跑 `install.mjs`，或者一次性注册一个不属于任何版本管理器的 Node：
+**安装脚本。** server 注册的是运行 `install.mjs` 的 `node` 的绝对路径，与 `PATH` 无关。如果这个 `node` 来自版本管理器（nvm、fnm、Volta、mise、asdf、nodenv 或 n），卸载该版本后状态栏会失效。用新的 Node 重跑 `install.mjs`，或注册一个不属于版本管理器的 Node：
 
 ```sh
 /opt/homebrew/bin/node ~/codex-hud/install.mjs   # 或 /usr/local/bin/node、/usr/bin/node 等
@@ -166,7 +158,7 @@ Codex 启动 MCP server 时只传递精简环境（`HOME` 和 `PATH`，通常不
 
 当注册的 Node 属于版本管理器或已不存在时，`node hud.mjs --doctor` 会给出警告。
 
-**Codex 插件。** 插件运行 `node ./hud.mjs`，因此 Codex 启动时的 `PATH` 上必须有 `node`。如果 Codex 是在 `PATH` 里没有 `node` 的环境中启动的，server 会启动失败（在 Codex 中按 `F2` 可查看错误），这种情况请改用安装脚本。
+**Codex 插件。** 插件运行 `node ./hud.mjs`，Codex 启动时的 `PATH` 上要有 `node`，否则 server 启动失败（在 Codex 中按 `F2` 查看错误），这时请改用安装脚本。
 
 查看当前注册的命令：
 
@@ -176,27 +168,17 @@ codex mcp get codex-hud
 
 ## 面向 AI Agent
 
-如果你是正在替用户安装或排查 `codex-hud` 的 AI agent，请不要静默安装，也不要默认用户的终端一定支持 Nerd Font 图标。
+agent 替用户安装或排查 `codex-hud` 时的步骤：
 
-**1. 先检查现状。** 如果仓库已在本地，先运行 `node hud.mjs --doctor --json`，或检查 `~/.codex/config.toml` 与 `codex plugin list`。不要在已安装插件时再跑 `install.mjs`（反之亦然）——插件存在时 `install.mjs` 会拒绝执行，两者并存也会触发 `--doctor` 警告。
-
-**2. 展示预览并确认偏好。** 先向用户展示默认状态栏的样子：
-
-```text
-gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
-```
-
-询问用户是否要调整 `segments`（默认 `model`、`project`、`context`、`limits`、`cost`；可选开启 `mode`、`title`、`tokens`、`env`、`tools`、`session`、`state`），或开启 Nerd Font `"icons": true`。
-
-- **默认为 `"icons": false`**，无需任何特殊字体即可开箱使用。
-- 如果用户想要 `"icons": true`，请展示 `doctor` 的 Nerd Font 探针（或让用户在实际运行 Codex 的终端中执行 `node hud.mjs --doctor`）并等待确认。**除非用户主动要求，否则不要替用户安装字体**——单装字体不会修改终端的字体配置，且在 SSH 下完全无效。
-
-**3. 执行安装。**
-- macOS / Linux / WSL：可选用 Codex 插件（`codex plugin marketplace add zhshj0110/codex-hud && codex plugin add codex-hud@codex-hud && codex features enable tui_extensions_statusline`，然后提醒用户在 `/statusline` 中手动选中），或运行 `node install.mjs`（自动开启特性并写入 `[tui] status_line_provider`）。
-- Windows：使用 `node install.mjs`。
-- 如果 `install.mjs` 因不支持的 `[tui]` 格式中止，把报错展示给用户，改用 `node install.mjs --no-select`，再提醒用户在 `/statusline` 中手动选中。
-
-**4. 使用 `node hud.mjs --doctor --json` 校验安装。** 输出结构示例：
+1. **检查现状。** 仓库已在本地时运行 `node hud.mjs --doctor --json`，否则检查 `~/.codex/config.toml` 和 `codex plugin list`。只用一种安装方式。
+2. **确认偏好。** 给用户看[默认状态栏](#codex-hud-codex-cli-状态栏-hud)，问是否要调整 [`segments`](#配置) 或开启 Nerd Font 图标。
+   - 图标：让用户在运行 Codex 的终端里执行 `node hud.mjs --doctor`，告诉你 `nerd` 行是否正常。agent 无法自行判断。
+   - 用户要求时才安装字体。装字体不会改终端的字体设置，SSH 下也没有效果。
+3. **安装。**
+   - macOS / Linux / WSL：Codex 插件（`codex plugin marketplace add zhshj0110/codex-hud && codex plugin add codex-hud@codex-hud && codex features enable tui_extensions_statusline`，再由用户在 `/statusline` 中选中），或 `node install.mjs`，它会同时开启特性并选中 provider。
+   - Windows：`node install.mjs`。
+   - `install.mjs` 因 `[tui]` 写法不支持而退出时，把报错给用户看，运行 `node install.mjs --no-select`，再让用户在 `/statusline` 中选中 `codex-hud`。
+4. **用 `node hud.mjs --doctor --json` 校验。** 输出示例：
 
 ```json
 {
@@ -241,18 +223,22 @@ node hud.mjs --doctor                               # 运行完整诊断与图�
 node hud.mjs --doctor --json                        # 输出机器可读的 JSON 诊断报告
 ```
 
-`--doctor` 不改动磁盘上的任何文件。它会检查 Node.js 版本（>= 18）、Codex CLI 版本与 `tui_extensions_statusline` 特性状态、MCP server 注册与 `[tui] status_line_provider`、用户配置合法性、Plain Unicode 与 Nerd Font 图标对比探针，以及示例快照与极端压力输入是否符合 Codex 的 UI 树限额。
+`--doctor` 只读。它执行[面向 AI Agent](#面向-ai-agent) 中列出的检查，打印图标探针，并用示例和极端输入检查是否超出 Codex 的 UI 树限额。
 
 ## 工作原理
 
-`claude-hud` 和 `agy-hud` 使用的是宿主的 `statusLine` 命令：每次刷新跑一个脚本，从 stdin 读 JSON，把一行文字打到 stdout。Codex CLI 没有这种接口，而是从 0.171 起提供实验特性 `tui_extensions_statusline`，**由 MCP server 充当 statusline provider**：
+Codex 0.171 加入了实验特性 `tui_extensions_statusline`，由 MCP server 提供状态栏。（`claude-hud` 和 `agy-hud` 则是运行一个 shell 命令，从 stdin 读 JSON、输出一行文字。）
 
 1. provider 是一个 stdio MCP server，在 `tools/list` 中声明一个工具，并带上
    `_meta["openai/ui"].entrypoints = [{ type: "statusline", resourceUri: "ui://codex-hud/footer" }]`。
 2. 在 TUI 中通过 `/statusline → Choose a status line provider` 选中它之后（选择会存成 `config.toml` 里 `[tui]` 下的 `status_line_provider`），Codex 大约每秒对该 URI 发一次 `resources/read`，并在 `params._meta["com.openai/codex-statusline-state"]` 中传入当前 thread 的快照：模型、推理强度、权限与审批模式、对话标题、cwd、context 用量、累计 token 与缓存命中率、额度、费用、agent 状态等。
 3. provider 返回一棵 JSON UI 树（`row`、`text`、`bold`、`link` 等节点，颜色可使用主题色 `status-*`），由 Codex 原生渲染。协议限制：64 KiB JSON、256 个节点、深度 16、16 KiB 文本，每次读取 1 秒内必须返回。出错或超时会停止轮询，需在 `/statusline` 里重新选中。
 
-该协议说明来自 Codex 二进制内置的 `create-statusline` skill。在快照之外，`codex-hud` 还会读取以下本地数据：
+协议说明见 Codex 二进制内置的 `create-statusline` skill。
+
+插件的 `.mcp.json` 会把 `HOME`、`PATH`、`CODEX_HOME`、`XDG_CONFIG_HOME`、`CODEX_HUD_CONFIG` 和 `CODEX_HUD_DISABLE` 传给 server，其他变量不会传入。
+
+除快照外，`codex-hud` 还读取以下本地数据：
 
 | 段 | 来源 |
 | --- | --- |
@@ -271,7 +257,7 @@ node hud.mjs --doctor --json                        # 输出机器可读的 JSON
 2. `$XDG_CONFIG_HOME/codex-hud/config.json`
 3. `~/.config/codex-hud/config.json`
 
-修改后 5 秒内自动生效，无需重启 Codex（仓库内提供了与默认值完全一致的 [`config.example.json`](./config.example.json)）。
+修改后 5 秒内生效，无需重启。示例见 [`config.example.json`](./config.example.json)。
 
 默认配置：
 
@@ -308,32 +294,29 @@ node hud.mjs --doctor --json                        # 输出机器可读的 JSON
 - `maxTools`：运行中（`◐`）和已完成（`⚙`）工具各自最多展示的 top 工具种类数（1–10，默认 `3`）。
 - `warn` / `danger`：进度条变黄（`!`）、变红（`!!`）的百分比阈值（默认 `70` / `90`）。
 
-类型不对的字段会被忽略并回退到默认值，数值会被限制在合理范围内，因此写错配置不会弄坏状态栏。
+类型不对的字段使用默认值，数值会被限制在各自范围内，`segments` 里的未知项会被跳过。
 
 ## 配色与主题
 
-footer 的配色尽量跟随 Codex 的 `/theme`（以下结论来自对真实 Codex 0.171 TUI 输出的抓取）：
-
-- 正常状态只用 `status-*` 主题色和默认前景色。Codex 会把它们换成当前主题的 RGB 值，所以切换 `/theme` 时 footer 自动跟着变。
+- 正常状态用 `status-*` 主题色和默认前景色，footer 会跟随 `/theme`。
 - 进度条：标签和进度条用该段的主题色（`status-usage` / `status-limit`），百分比用默认前景色加粗：
   - 达到 `warn`：进度条变成 ANSI 黄，百分比前加 `!`。
   - 达到 `danger`：进度条变成 ANSI 红，百分比前加 `!!`。
-  - 告警色使用终端调色板，不跟随 `/theme`。之所以加标记，是因为有些主题的正常色本身就偏黄或偏红（如 `one-half-light` 的 `status-limit` 是琥珀色），只靠颜色分不清。
-  - 是否告警按显示出来的四舍五入整数判断，例如 `69.6%` 会显示为 `! 70%`。
-  - 若不想启用告警，可将 `warn` 和 `danger` 都设为 `101`。
-- `waiting` 和 `working` 在实测主题里是同一个颜色，因此 `waiting` 用 `◌`、`working` 用 `●` 区分。
-- 不使用 `surface`（主题背景色，文字会看不见）和 `accent`（不输出任何颜色）。
+  - 告警色来自终端的 ANSI 调色板，不跟随主题。有些主题的正常色本身偏黄或偏红（如 `one-half-light` 的 `status-limit`），所以另加 `!`/`!!` 标记。
+  - 按显示的四舍五入值判断，`69.6%` 显示为 `! 70%`。
+  - 关闭告警：把 `warn` 和 `danger` 都设为 `101`。
+- `state` 段用 `◌` 表示 waiting，`●` 表示 working。
 - `/statusline` 里的 "Use theme colors" 开关对自定义 provider 无效。
 
 本地预览不同主题效果：`node hud.mjs --preview --theme dracula` 或 `--theme one-half-light`。
 
 ## 隐私与安全
 
-`codex-hud` 作为 Codex CLI 启动的本地 stdio MCP server 运行，**零第三方运行依赖**，且**不发起任何网络请求**。
+`codex-hud` 是由 Codex 启动的本地 stdio MCP server，没有第三方运行依赖，不发网络请求。
 
-- `hud.mjs` 完全只读：仅读取 `stdin` 上的 JSON-RPC 请求、本地配置（上限 64 KiB）、通过 `execFile` 执行 `git status`（无 shell 拼接，800 ms 超时），有界读取 `~/.codex/sessions/` 下当前 thread 的 rollout 文件尾部、`~/.codex/models_cache.json`，以及额度回退时最近至多 30 个 rollout 文件（任意 thread）的末尾 128 KiB。
+- `hud.mjs` 只读：读取 `stdin` 上的 JSON-RPC 请求、本地配置（上限 64 KiB）、通过 `execFile` 执行 `git status`（无 shell 拼接，800 ms 超时），有界读取 `~/.codex/sessions/` 下当前 thread 的 rollout 文件尾部、`~/.codex/models_cache.json`，以及额度回退时最近至多 30 个 rollout 文件（任意 thread）的末尾 128 KiB。
 - 渲染前会清理不可信字符串（对话标题、plan 步骤、shell 命令等）中的控制字符与 Unicode 双向覆盖字符。
-- `node hud.mjs --doctor` 只读取本地文件并调用只读 `codex` 子命令（`--version`、`features list`、`mcp get`、`plugin list`）。注意 `--doctor --json` 包含本地绝对路径，贴到公开 issue 前请先检查。
+- `node hud.mjs --doctor` 只读取本地文件并调用只读 `codex` 子命令（`--version`、`features list`、`mcp get`、`plugin list`）。`--doctor --json` 的输出含本地绝对路径，贴到公开 issue 前先检查一下。
 - 完整安全模型与漏洞反馈方式见 [SECURITY.md](./SECURITY.md)。
 
 ## 开发
@@ -345,13 +328,3 @@ npm run doctor
 ```
 
 无需构建步骤。开发流程与测试规范见 [CONTRIBUTING.md](./CONTRIBUTING.md)。本项目基于 [MIT License](./LICENSE) 开源。
-
-## 限制说明
-
-- `tui_extensions_statusline` 仍为实验特性，协议可能随 Codex 版本变化。已验证版本：`codex-cli 0.171.0`。
-- footer 只有一行，宽度不够时按段换行。协议不支持多行布局，无法实现 `claude-hud` 那样的多行面板。
-- 为了让 Codex 发现 provider，`statusline` 这个 MCP 工具必须对模型可见：用 `disabled_tools` 隐藏它会导致 `"Status line unavailable"`。调用它没有任何副作用。Codex App 和 IDE 插件共用同一份 `config.toml`，也会启动该 server，但只有 CLI TUI 会渲染它。
-- Codex 只向 MCP server 传递少量环境变量。`install.mjs` 会保存运行时已设置的 `CODEX_HOME`、`CODEX_HUD_CONFIG`、`XDG_CONFIG_HOME` 和 `CODEX_HUD_DISABLE`。修改这些变量后，需重新运行安装脚本并重启 Codex。
-- 如果 footer 回退到默认样式，可在 Codex 中按 `F2` 查看失败原因，或运行 `node hud.mjs --doctor` 排查。
-- 每次返回前都会按 Codex 的限额（64 KiB JSON / 256 节点 / 深度 16 / 16 KiB 文本）校验：超出时依次降级为 `model` + `context`、再降级为空 footer，避免 Codex 停止轮询。
-- 首次挂载到较大的 rollout 文件时只读最后 2 MiB，每次轮询最多处理 4 MiB，超过 1 MiB 的单条记录直接跳过。因此在非常长的会话中，plan 进度可能需要等到下一次 `update_plan` 调用才会显示。

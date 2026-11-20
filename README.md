@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README_CN.md)
 
-`codex-hud` is a compact status-line HUD for the Codex CLI, inspired by [claude-hud](https://github.com/jarrodwatts/claude-hud) and [agy-hud](https://github.com/franksde/agy-hud). It renders natively in the terminal TUI footer with zero runtime dependencies (Node.js 18+ only).
+`codex-hud` is a compact status-line HUD for the Codex CLI, inspired by [claude-hud](https://github.com/jarrodwatts/claude-hud) and [agy-hud](https://github.com/franksde/agy-hud). It renders in the Codex TUI footer and needs only Node.js 18+; there is no `npm install` step.
 
 **Default status line (`"icons": false`)**
 
@@ -10,24 +10,22 @@
 gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
 
-The default shows the model and project names as text and uses Unicode symbols such as `⎇` and `↻`. Model, Git status, context usage, and rate limits reflect your session. For the model and folder icons, see [how to enable Nerd Font icons](#icons-render-as-boxes).
+The default shows the model and project names as text and uses Unicode symbols such as `⎇` and `↻`. For model and folder icons, see [Icons Render As Boxes](#icons-render-as-boxes).
 
 ## Requirements
 
-- **Codex CLI 0.171.0 or newer** with the experimental `tui_extensions_statusline` feature. Verified on `codex-cli 0.171.0`.
-- **Node.js 18+**. The install script registers the absolute path of the `node` that runs it. The plugin runs `node` from the `PATH` Codex was started with (see [Node Is Not Found](#node-is-not-found)).
-- **macOS, Linux, WSL, or Windows**. macOS / Linux / WSL can install as a Codex plugin or via the install script; Windows uses the install script.
-- **A Nerd Font (optional)**. By default, `codex-hud` uses plain Unicode (`"icons": false`) and needs no special font at all. If you enable `"icons": true` without a Nerd Font configured in your terminal, icons render as boxes or `?` — see [Icons Render As Boxes](#icons-render-as-boxes).
-
-`codex-hud` has zero third-party runtime dependencies, so no `npm install` is needed.
+- **Codex CLI 0.171.0 or newer** with the experimental `tui_extensions_statusline` feature.
+- **Node.js 18+** (see [Node Is Not Found](#node-is-not-found)).
+- **macOS, Linux, WSL, or Windows**.
+- **A Nerd Font (optional)**. The default `"icons": false` uses plain Unicode and works with any font. `"icons": true` needs a Nerd Font in your terminal.
 
 ## Installation
 
-There are two ways to install. Pick one: the install script refuses to run when the Codex plugin is already installed, and `--doctor` warns if both are present.
+Choose one method. `install.mjs` refuses to run when the Codex plugin is installed, and `--doctor` flags a duplicate registration.
 
 ### Option 1: Codex Plugin (macOS / Linux / WSL)
 
-This repository is also a Codex plugin marketplace (`.agents/plugins/marketplace.json`, `.codex-plugin/plugin.json`, `.mcp.json`), similar to how `claude-hud` ships as a Claude Code plugin:
+This repository is also a Codex plugin marketplace:
 
 ```sh
 codex plugin marketplace add zhshj0110/codex-hud   # or a local clone: codex plugin marketplace add ~/codex-hud
@@ -35,17 +33,15 @@ codex plugin add codex-hud@codex-hud
 codex features enable tui_extensions_statusline
 ```
 
-**Important: After installation, start Codex and select the provider once inside the TUI:**
+Then start Codex and pick the provider once:
 
 ```text
 /statusline → Choose a status line provider → codex-hud · codex-hud@codex-hud
 ```
 
-A plugin cannot enable the experimental feature or select itself as the active status-line provider, so those two steps are manual (similar to `agy-hud`'s one-time `/statusline` command).
+A plugin cannot enable the feature or select itself, so these steps are manual.
 
-- The plugin starts the server with `node ./hud.mjs` from the plugin directory, so `node` (18+) must be on the `PATH` Codex was started with. That is usually true when you start Codex from a shell where `node` works; otherwise use Option 2.
-- Because Codex starts MCP servers with a minimal environment, `.mcp.json` explicitly forwards `HOME`, `PATH`, `CODEX_HOME`, `XDG_CONFIG_HOME`, and the `CODEX_HUD_*` variables.
-- **Windows:** the plugin has not been tested on Windows; use Option 2 (the install script).
+The plugin runs `node ./hud.mjs`, so `node` must be on the `PATH` Codex starts with. If it isn't, use Option 2. The plugin has not been tested on Windows; use Option 2 there too.
 
 ### Option 2: Install Script (All Platforms, Including Windows)
 
@@ -61,13 +57,13 @@ git clone https://github.com/zhshj0110/codex-hud.git "$HOME\codex-hud"
 node "$HOME\codex-hud\install.mjs"
 ```
 
-The installer backs up `config.toml` to `config.toml.before-codex-hud.<timestamp>`, then performs three steps:
+The installer backs up `config.toml` to `config.toml.before-codex-hud.<timestamp>`, then:
 
 1. Runs `codex features enable tui_extensions_statusline`.
 2. Registers the `codex-hud` MCP server as `<node> <clone>/hud.mjs`, where `<node>` is the absolute path of the Node.js running the script, so Codex's minimal `PATH` does not need to contain `node`. To register a different Node, run the script with it, e.g. `/opt/homebrew/bin/node ~/codex-hud/install.mjs`.
 3. Writes `status_line_provider = { server = "codex-hud", tool = "statusline" }` under `[tui]`. Pass `--no-select` if you prefer to choose it manually in `/statusline`.
 
-Config edits use an atomic temp-file + `rename` write that preserves file permissions, and the installer verifies the result with `codex features list`. If an installation or removal step fails after editing `config.toml`, the backup is restored (or a newly created `config.toml` is removed). If `[tui]` uses an unsupported layout (`[tui.status_line_provider]` subtable, top-level `tui.xxx =` dotted keys, or a multi-line `status_line_provider`), the installer aborts before modifying anything and suggests `--no-select`.
+If a step fails, the installer restores the backup. If `[tui]` uses a layout it can't edit (a `[tui.status_line_provider]` subtable, top-level `tui.xxx =` dotted keys, or a multi-line `status_line_provider`), it stops without changing anything. Rerun with `--no-select` and pick `codex-hud` in `/statusline`.
 
 Start a new Codex session to see the HUD.
 
@@ -86,9 +82,9 @@ Start a new Codex session to see the HUD.
   cd ~/codex-hud && git pull
   ```
 
-  Because the registered MCP server runs `hud.mjs` from your clone, pulling updates takes effect on your next Codex session with no need to rerun `install.mjs`. Rerun it only if you changed environment variables such as `CODEX_HOME`, or removed the Node version it registered.
+  The registered server runs `hud.mjs` from your clone, so updates apply on the next Codex session. Rerun `install.mjs` only if you changed variables such as `CODEX_HOME` or removed the Node version it registered.
 
-Your user config lives outside the repository at `~/.config/codex-hud/config.json`, so upgrading or reinstalling never overwrites it.
+Your [config file](#config) lives outside the repository, so upgrades leave it alone.
 
 ## Uninstalling
 
@@ -116,28 +112,24 @@ Your user config lives outside the repository at `~/.config/codex-hud/config.jso
 
 ## Icons Render As Boxes
 
-By default, `codex-hud` uses plain Unicode (`"icons": false`), so it works in any terminal without installing a special font.
+With `"icons": true`, `codex-hud` uses Nerd Font glyphs for `model`, `folder`, `branch`, `mode`, `tools`, `plan`, `edit`, `clock`, `reset`, and `fast`. A font without them shows boxes or `?`.
 
-When `"icons": true` is enabled, `codex-hud` uses Nerd Font Private Use Area glyphs for `model`, `folder`, `branch`, `mode`, `tools`, `plan`, `edit`, `clock`, `reset`, and `fast`. A terminal font without those glyphs renders them as boxes or `?`.
-
-Run the built-in diagnostic check:
+Run the diagnostic in the terminal you use for Codex:
 
 ```sh
 node hud.mjs --doctor
 ```
 
-It prints a side-by-side **Plain Unicode vs. Nerd Font probe**. **Read the probe line yourself** — a terminal never reports which glyphs it actually drew, so only looking at the probe in your own terminal tells you whether Nerd Font icons work.
+It prints a plain Unicode row and a Nerd Font row. The terminal can't report which glyphs it drew, so check the `nerd` row by eye. If it shows boxes, `?`, or blanks, either:
 
-If the `nerd` row shows boxes, `?`, or blanks, pick one:
-
-**A. Use plain Unicode (default).** Works everywhere, takes effect within 5 seconds, needs no font:
+**A. Use plain Unicode.** Set `"icons": false` in your [config file](#config) and keep its other keys. If you have no config file yet:
 
 ```sh
 mkdir -p ~/.config/codex-hud
-echo '{"icons": false}' > ~/.config/codex-hud/config.json   # merge the key if the file already exists
+echo '{"icons": false}' > ~/.config/codex-hud/config.json
 ```
 
-On Windows, in PowerShell (`mkdir -p` does not exist in `cmd.exe`, and Windows PowerShell 5.1 writes UTF-16 through `>`, which JSON parsing will reject):
+On Windows (PowerShell):
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "~\.config\codex-hud" | Out-Null
@@ -147,18 +139,18 @@ Set-Content -Encoding ascii -Path "~\.config\codex-hud\config.json" -Value '{"ic
 **B. Enable Nerd Font icons.**
 
 1. Install a Nerd Font — for example `brew install --cask font-hack-nerd-font` on macOS, or Hack Nerd Font from <https://www.nerdfonts.com> on Windows.
-2. Point your terminal profile at that font family (e.g., iTerm2 → Settings → Profiles → Text → Font, VS Code `terminal.integrated.fontFamily`, `font-family` in `~/.config/ghostty/config`, or Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face). Note that Ghostty, WezTerm, and kitty ship built-in Nerd Font symbol fallbacks.
-3. Set `"icons": true` in your [HUD config](#config). The status line reloads the setting within 5 seconds.
+2. Point your terminal profile at that font family (e.g., iTerm2 → Settings → Profiles → Text → Font, VS Code `terminal.integrated.fontFamily`, `font-family` in `~/.config/ghostty/config`, or Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face). Ghostty, WezTerm, and kitty include Nerd Font symbol fallbacks.
+3. Set `"icons": true` in your [config file](#config).
 
 <img src="assets/preview.png" alt="Codex status line with Nerd Font icons enabled" width="700">
 
-Over SSH, glyphs are rendered by the terminal on your **local** machine, so installing a font on the remote host changes nothing. Use option B locally, or keep `"icons": false` on the remote host.
+Over SSH, your local terminal draws the glyphs, so a font installed on the remote host has no effect.
 
 ## Node Is Not Found
 
-Codex starts MCP servers with a minimal environment (`HOME` and `PATH`, without loading `.zshrc` or `.bashrc`). How that affects `codex-hud` depends on how you installed it.
+Codex starts MCP servers with a minimal environment (`HOME` and `PATH`, without loading `.zshrc` or `.bashrc`).
 
-**Install script.** The server is registered with the absolute path of the `node` that ran `install.mjs`, so `PATH` does not matter. If that `node` came from a version manager (nvm, fnm, Volta, mise, asdf, nodenv, or n), the path points inside one specific Node version, and removing that version breaks the footer. Either rerun `install.mjs` with the Node you switched to, or register a Node outside any version manager once:
+**Install script.** The server is registered with the absolute path of the `node` that ran `install.mjs`, so `PATH` does not matter. If that `node` came from a version manager (nvm, fnm, Volta, mise, asdf, nodenv, or n), removing that Node version breaks the footer. Rerun `install.mjs` with the Node you switched to, or register one outside any version manager:
 
 ```sh
 /opt/homebrew/bin/node ~/codex-hud/install.mjs   # or /usr/local/bin/node, /usr/bin/node, ...
@@ -166,7 +158,7 @@ Codex starts MCP servers with a minimal environment (`HOME` and `PATH`, without 
 
 `node hud.mjs --doctor` warns when the registered Node belongs to a version manager or no longer exists.
 
-**Codex plugin.** The plugin runs `node ./hud.mjs`, so `node` must be on the `PATH` Codex was started with. If you start Codex somewhere `node` is not on `PATH`, the server fails to start (press `F2` in Codex to see the error). Use the install script in that case.
+**Codex plugin.** The plugin runs `node ./hud.mjs`, so `node` must be on the `PATH` Codex starts with. Otherwise the server fails to start (press `F2` in Codex to see the error); use the install script instead.
 
 Check what is registered:
 
@@ -176,27 +168,17 @@ codex mcp get codex-hud
 
 ## For AI Agents
 
-If you are an AI agent installing or troubleshooting `codex-hud` for a user, do not install blindly and do not assume Nerd Font icons work on their terminal.
+Steps for an agent installing or troubleshooting `codex-hud` for a user:
 
-**1. Check existing state first.** Run `node hud.mjs --doctor --json` (if the repo is already present) or check `~/.codex/config.toml` and `codex plugin list`. Do not install the script while the Codex plugin is installed (or vice versa) — `install.mjs` refuses when the plugin is present, and having both causes a warning.
-
-**2. Preview and confirm preferences.** Show the user what the default footer looks like:
-
-```text
-gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
-```
-
-Ask whether they want to customize `segments` (default: `model`, `project`, `context`, `limits`, `cost`; opt-in: `mode`, `title`, `tokens`, `env`, `tools`, `session`, `state`) or enable Nerd Font `"icons": true`.
-
-- **Default is `"icons": false`**, which works everywhere without a Nerd Font.
-- If they want `"icons": true`, send the Nerd Font probe from `doctor` (or have them run `node hud.mjs --doctor` in the terminal where they run Codex) and wait for their confirmation. **Never install a font unless they explicitly ask for it** — installing a font alone does not change the terminal's configured font family, and does nothing over SSH.
-
-**3. Install.**
-- macOS / Linux / WSL: prefer either the Codex plugin (`codex plugin marketplace add zhshj0110/codex-hud && codex plugin add codex-hud@codex-hud && codex features enable tui_extensions_statusline`, then instruct the user to select it in `/statusline`) or `node install.mjs` (which also enables the feature and writes `[tui] status_line_provider`).
-- Windows: use `node install.mjs`.
-- If `install.mjs` aborts due to an unsupported `[tui]` layout, show the error to the user and use `node install.mjs --no-select`, then instruct them to select `codex-hud` in `/statusline`.
-
-**4. Verify with `node hud.mjs --doctor --json`.** Example output shape:
+1. **Check existing state.** Run `node hud.mjs --doctor --json` if the repo is present, or check `~/.codex/config.toml` and `codex plugin list`. Use only one install method.
+2. **Confirm preferences.** Show the user the [default status line](#codex-hud-codex-cli-status-line-hud) and ask whether they want different [`segments`](#config) or Nerd Font icons.
+   - Icons: have the user run `node hud.mjs --doctor` in the terminal they use for Codex and tell you whether the `nerd` row renders. Agents can't detect this.
+   - Install a font only if the user asks. Installing one doesn't change the terminal's font setting and has no effect over SSH.
+3. **Install.**
+   - macOS / Linux / WSL: the Codex plugin (`codex plugin marketplace add zhshj0110/codex-hud && codex plugin add codex-hud@codex-hud && codex features enable tui_extensions_statusline`, then the user selects it in `/statusline`), or `node install.mjs`, which also enables the feature and selects the provider.
+   - Windows: `node install.mjs`.
+   - If `install.mjs` stops on an unsupported `[tui]` layout, show the user the error, run `node install.mjs --no-select`, and have them select `codex-hud` in `/statusline`.
+4. **Verify** with `node hud.mjs --doctor --json`. Example output:
 
 ```json
 {
@@ -241,18 +223,22 @@ node hud.mjs --doctor                               # Run full diagnostics + ico
 node hud.mjs --doctor --json                        # Machine-readable JSON diagnostics
 ```
 
-`--doctor` makes no changes on disk. It checks Node.js (>= 18), Codex CLI version and `tui_extensions_statusline` status, MCP server registration and `[tui] status_line_provider`, user config validity, the Plain Unicode vs. Nerd Font icon probe, and both sample and worst-case stress renders against Codex's UI tree limits.
+`--doctor` is read-only. It checks the items listed under [For AI Agents](#for-ai-agents), prints the icon probe, and renders sample and worst-case lines against Codex's UI tree limits.
 
 ## How It Works
 
-Unlike `claude-hud` and `agy-hud` — which run a host `statusLine` shell command that reads JSON from stdin and prints a line to stdout — Codex CLI exposes an experimental `tui_extensions_statusline` feature (introduced in 0.171) where **an MCP server acts as the status-line provider**:
+Codex 0.171 added the experimental `tui_extensions_statusline` feature, in which an MCP server provides the status line. (`claude-hud` and `agy-hud` instead run a shell command that reads JSON on stdin and prints a line.)
 
 1. The provider is a stdio MCP server that advertises a tool in `tools/list` with
    `_meta["openai/ui"].entrypoints = [{ type: "statusline", resourceUri: "ui://codex-hud/footer" }]`.
 2. Once selected via `/statusline → Choose a status line provider` (saved under `[tui]` as `status_line_provider` in `config.toml`), Codex polls `resources/read` on that URI roughly once per second, passing a snapshot of the active thread in `params._meta["com.openai/codex-statusline-state"]`: model, reasoning effort, permissions & approval mode, thread title, cwd, context usage, cumulative tokens & cache hit rate, rate limits, cost, agent state, and more.
 3. The provider returns a JSON UI tree (`row`, `text`, `bold`, `link`, etc., with `status-*` theme colors) that Codex renders natively. Protocol limits: 64 KiB JSON, 256 nodes, depth 16, 16 KiB text, and a 1-second timeout per read. Errors or timeouts stop polling until you re-select the provider in `/statusline`.
 
-This protocol is documented in the built-in `create-statusline` skill inside the Codex binary. On top of the snapshot, `codex-hud` reads these local data sources:
+The protocol is documented in the `create-statusline` skill built into the Codex binary.
+
+The plugin's `.mcp.json` forwards `HOME`, `PATH`, `CODEX_HOME`, `XDG_CONFIG_HOME`, `CODEX_HUD_CONFIG`, and `CODEX_HUD_DISABLE` to the server. Other variables are not passed through.
+
+Besides the snapshot, `codex-hud` reads these local sources:
 
 | Segment | Source |
 | --- | --- |
@@ -271,7 +257,7 @@ This protocol is documented in the built-in `create-statusline` skill inside the
 2. `$XDG_CONFIG_HOME/codex-hud/config.json`
 3. `~/.config/codex-hud/config.json`
 
-Changes take effect within 5 seconds with no restart required (see [`config.example.json`](./config.example.json)).
+Changes apply within 5 seconds without a restart. See [`config.example.json`](./config.example.json).
 
 Default config:
 
@@ -308,32 +294,29 @@ Options:
 - `maxTools`: Max distinct tools shown for running (`◐`) and completed (`⚙`) groups respectively (1–10, default `3`).
 - `warn` / `danger`: Percentage thresholds for yellow (`!`) and red (`!!`) meter alerts (default `70` / `90`).
 
-Invalid field types are ignored and fall back to defaults; numeric options are clamped to safe ranges so a typo in `config.json` will never break the footer.
+Fields with the wrong type use their defaults, numeric settings are clamped to their ranges, and unknown `segments` entries are skipped.
 
 ## Colors & Themes
 
-The footer follows Codex's active `/theme` as closely as possible (based on captured output from real Codex 0.171 TUI themes):
-
-- Normal state uses only `status-*` theme colors and the default foreground, so switching `/theme` updates the footer automatically.
+- Normal state uses `status-*` theme colors and the default foreground, so the footer follows `/theme`.
 - Meters use their segment theme color (`status-usage` / `status-limit`) for the label and bar, with a bold default-foreground percentage:
   - At `warn`: the bar turns ANSI yellow and `!` is prefixed to the percentage.
   - At `danger`: the bar turns ANSI red and `!!` is prefixed to the percentage.
-  - Alert colors use the terminal ANSI palette rather than theme colors. Markers (`!`/`!!`) are included because some themes use amber/reddish colors even in normal state (e.g. `status-limit` in `one-half-light`).
-  - Thresholds are evaluated against the rounded displayed integer (e.g. `69.6%` renders as `! 70%`).
-  - To disable alerts entirely, set both `warn` and `danger` to `101`.
-- Because `waiting` and `working` share the same color in tested themes, `waiting` uses `◌` while `working` uses `●`.
-- `surface` (theme background color, invisible text) and `accent` (emits no color) are intentionally avoided.
+  - Alert colors come from the terminal's ANSI palette, not the theme. The `!`/`!!` markers matter because some themes already use amber or red in normal state (e.g. `status-limit` in `one-half-light`).
+  - Thresholds apply to the rounded displayed value (`69.6%` renders as `! 70%`).
+  - To turn alerts off, set both `warn` and `danger` to `101`.
+- The `state` segment shows `◌` for waiting and `●` for working.
 - The "Use theme colors" toggle in `/statusline` does not affect custom providers.
 
 Preview different themes locally: `node hud.mjs --preview --theme dracula` or `--theme one-half-light`.
 
 ## Privacy And Security
 
-`codex-hud` runs locally as a child stdio MCP server spawned by Codex CLI. It has **zero third-party runtime dependencies** and makes **no network requests**.
+`codex-hud` runs locally as a stdio MCP server started by Codex. It has no third-party runtime dependencies and makes no network requests.
 
 - `hud.mjs` is read-only: it reads JSON-RPC requests from `stdin`, local config (`<= 64 KiB`), git status via `execFile` (no shell interpolation, 800 ms timeout), bounded tails of the active thread's rollout file under `~/.codex/sessions/`, `~/.codex/models_cache.json`, and, for the rate-limit fallback, the last 128 KiB of up to 30 recent rollout files from any thread.
 - Control characters and Unicode bidirectional overrides are stripped from untrusted strings (thread titles, plan steps, shell commands) before rendering.
-- `node hud.mjs --doctor` only reads local files and runs read-only `codex` subcommands (`--version`, `features list`, `mcp get`, `plugin list`). Note that `--doctor --json` includes absolute local paths — review before pasting into public issues.
+- `node hud.mjs --doctor` only reads local files and runs read-only `codex` subcommands (`--version`, `features list`, `mcp get`, `plugin list`). `--doctor --json` output includes absolute local paths, so check it before pasting it into a public issue.
 - See [SECURITY.md](./SECURITY.md) for the full security model and vulnerability reporting instructions.
 
 ## Development
@@ -345,13 +328,3 @@ npm run doctor
 ```
 
 No build step is required. See [CONTRIBUTING.md](./CONTRIBUTING.md) for development workflow and testing guidelines. Licensed under the [MIT License](./LICENSE).
-
-## Limitations
-
-- `tui_extensions_statusline` is still experimental and its protocol may change across Codex versions. Verified on `codex-cli 0.171.0`.
-- The footer is single-row (wrapping by segment when narrow). Multi-line dashboards like `claude-hud` are not supported by the protocol.
-- For Codex to discover the provider, the `statusline` MCP tool must remain visible to the model: hiding it via `disabled_tools` causes `"Status line unavailable"`. Calling it has no side effects. Codex App and IDE extensions share the same `config.toml` and will start this server, though only the CLI TUI renders it.
-- Codex passes a minimal environment to MCP servers. `install.mjs` stores the values of `CODEX_HOME`, `CODEX_HUD_CONFIG`, `XDG_CONFIG_HOME`, and `CODEX_HUD_DISABLE` if set when you run it. Rerun the script after changing those values, then restart Codex.
-- If the footer falls back to the built-in one, press `F2` in Codex to see the error or run `node hud.mjs --doctor`.
-- Every render is validated against Codex's limits (64 KiB JSON / 256 nodes / depth 16 / 16 KiB text): if exceeded, it falls back to `model` + `context`, and then to an empty footer so Codex does not stop polling.
-- When first attaching to a large rollout file, only the last 2 MiB are read, at most 4 MiB are processed per poll, and single records over 1 MiB are skipped. In very long sessions, plan progress may wait until the next `update_plan` call.
