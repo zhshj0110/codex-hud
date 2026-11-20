@@ -4,11 +4,13 @@
 
 `codex-hud` is a compact status-line HUD for the Codex CLI, inspired by [claude-hud](https://github.com/jarrodwatts/claude-hud) and [agy-hud](https://github.com/franksde/agy-hud). It renders natively in the terminal TUI footer with zero runtime dependencies (Node.js 18+ only).
 
-<img src="assets/preview.png" alt="codex-hud status-line HUD preview" width="700">
+**Default status line (`"icons": false`)**
 
 ```text
 gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
+
+The default shows the model and project names as text and uses Unicode symbols such as `⎇` and `↻`. Model, Git status, context usage, and rate limits reflect your session. For the model and folder icons, see [how to enable Nerd Font icons](#icons-render-as-boxes).
 
 ## Requirements
 
@@ -142,10 +144,13 @@ New-Item -ItemType Directory -Force -Path "~\.config\codex-hud" | Out-Null
 Set-Content -Encoding ascii -Path "~\.config\codex-hud\config.json" -Value '{"icons": false}'
 ```
 
-**B. Enable Nerd Font icons.** Two steps, and only the second changes what appears on screen:
+**B. Enable Nerd Font icons.**
 
 1. Install a Nerd Font — for example `brew install --cask font-hack-nerd-font` on macOS, or Hack Nerd Font from <https://www.nerdfonts.com> on Windows.
 2. Point your terminal profile at that font family (e.g., iTerm2 → Settings → Profiles → Text → Font, VS Code `terminal.integrated.fontFamily`, `font-family` in `~/.config/ghostty/config`, or Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face). Note that Ghostty, WezTerm, and kitty ship built-in Nerd Font symbol fallbacks.
+3. Set `"icons": true` in your [HUD config](#config). The status line reloads the setting within 5 seconds.
+
+<img src="assets/preview.png" alt="Codex status line with Nerd Font icons enabled" width="700">
 
 Over SSH, glyphs are rendered by the terminal on your **local** machine, so installing a font on the remote host changes nothing. Use option B locally, or keep `"icons": false` on the remote host.
 

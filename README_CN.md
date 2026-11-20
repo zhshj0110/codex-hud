@@ -4,11 +4,13 @@
 
 `codex-hud` 是一个给 Codex CLI 使用的紧凑型状态栏 HUD，思路参考 [claude-hud](https://github.com/jarrodwatts/claude-hud) 和 [agy-hud](https://github.com/franksde/agy-hud)。它在终端 TUI 的 footer 里原生渲染，零第三方运行依赖，只需要 Node.js 18+。
 
-<img src="assets/preview.png" alt="codex-hud 状态栏 HUD 预览" width="700">
+**默认状态栏（`"icons": false`）**
 
 ```text
 gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
+
+默认以纯文字显示模型和项目名，并使用 `⎇`、`↻` 等 Unicode 符号。模型、Git 状态、上下文用量和额度随会话变化。模型和文件夹图标可通过[开启 Nerd Font 图标](#图标显示成方块)显示。
 
 ## 运行要求
 
@@ -142,10 +144,13 @@ New-Item -ItemType Directory -Force -Path "~\.config\codex-hud" | Out-Null
 Set-Content -Encoding ascii -Path "~\.config\codex-hud\config.json" -Value '{"icons": false}'
 ```
 
-**B. 使用 Nerd Font 图标。** 需要两步，且只有第二步会改变屏幕上的显示：
+**B. 开启 Nerd Font 图标。**
 
 1. 安装 Nerd Font，例如 macOS 上运行 `brew install --cask font-hack-nerd-font`，Windows 上从 <https://www.nerdfonts.com> 下载 Hack Nerd Font。
 2. 把终端 profile 的字体指向该字族（如 iTerm2 → Settings → Profiles → Text → Font、VS Code 的 `terminal.integrated.fontFamily`、`~/.config/ghostty/config` 中的 `font-family`、Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face）。Ghostty、WezTerm、kitty 自带 Nerd Font 符号回退，通常开箱即可显示。
+3. 在 [HUD 配置](#配置)中设置 `"icons": true`。状态栏会在 5 秒内重新加载设置。
+
+<img src="assets/preview.png" alt="开启 Nerd Font 图标后的 Codex 状态栏" width="700">
 
 在 SSH 会话里，字形由你**本地**机器上的终端绘制，在远端主机装字体不起任何作用。请在本地按方案 B 配置，或在远端保持 `"icons": false`。
 
