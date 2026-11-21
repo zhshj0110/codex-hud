@@ -11,6 +11,8 @@ const PLAIN = {
   ahead: "↑",
   behind: "↓",
   reset: "↻",
+  // Nerd Font glyphs draw wider than their one cell and would cover the next character.
+  resetGap: "",
   tools: "⚙",
   plan: "☑",
   clock: "⏱",
@@ -27,6 +29,7 @@ const NERD = {
   folder: "",
   branch: "",
   reset: "",
+  resetGap: " ",
   tools: "",
   plan: "",
   clock: "",
@@ -286,7 +289,7 @@ const segments = {
         if (out.length === 0) parts.unshift(text("Usage", "status-limit"));
         if (w.resets_at) {
           const left = w.resets_at - ctx.now / 1000;
-          if (left > 0) parts.push(text(`${g.reset}${fmtDuration(left)}`, "status-metadata"));
+          if (left > 0) parts.push(text(`${g.reset}${g.resetGap}${fmtDuration(left)}`, "status-metadata"));
         }
         out.push(row(parts));
       }

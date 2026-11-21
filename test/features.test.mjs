@@ -527,3 +527,16 @@ test("render: each group is its own wrapping row, with no separator between grou
   assert.equal(strip(toAnsi(flat)), "gpt-5.5 │ Context ███░░░░░ 40%");
   assert.equal(flat.props.gap, 1);
 });
+
+test("render: the Nerd Font reset glyph is followed by a space, the plain one is not", () => {
+  const limits = [{
+    limit_id: "codex",
+    limit_name: null,
+    primary_limit: { used_percent: 10, window_minutes: 300, resets_at: 1000 + 3600 },
+    secondary_limit: null,
+  }];
+  const line = (icons) =>
+    strip(toAnsi(render(baseState(), { cfg: { ...DEFAULTS, segments: ["limits"], icons }, rateLimits: limits, now: 1000 * 1000 })));
+  assert.match(line(false), /↻1h/);
+  assert.match(line(true), /\uf01e 1h/);
+});
