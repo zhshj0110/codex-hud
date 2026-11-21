@@ -10,7 +10,7 @@
 gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1   Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
 
-终端宽度不够一行时，footer 会在两组之间折行，`Context` 和 `Usage` 从第二行开始。
+终端宽度不够一行时，footer 会在两组之间折行，`Context` 和 `Usage` 从第二行开始，效果见[截图](#图标显示成方块)。
 
 默认以纯文字显示模型和项目名，并使用 `⎇`、`↻` 等 Unicode 符号。模型和文件夹图标见[图标显示成方块](#图标显示成方块)。
 
@@ -144,7 +144,7 @@ Set-Content -Encoding ascii -Path "~\.config\codex-hud\config.json" -Value '{"ic
 2. 把终端 profile 的字体指向该字族（如 iTerm2 → Settings → Profiles → Text → Font、VS Code 的 `terminal.integrated.fontFamily`、`~/.config/ghostty/config` 中的 `font-family`、Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face）。Ghostty、WezTerm、kitty 自带 Nerd Font 符号回退。
 3. 在[配置文件](#配置)中设置 `"icons": true`。
 
-<img src="assets/preview.png" alt="开启 Nerd Font 图标后的 Codex 状态栏" width="700">
+<img src="assets/preview.png" alt="iTerm2 中开启 Nerd Font 图标的 Codex 状态栏，在两组之间折行" width="700">
 
 SSH 下字形由本地终端绘制，在远端主机装字体没有用。
 

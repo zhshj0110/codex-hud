@@ -10,7 +10,7 @@
 gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1   Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
 
-When the terminal is too narrow for one line, the footer wraps between the two groups, so `Context` and `Usage` start the second line.
+When the terminal is too narrow for one line, the footer wraps between the two groups, so `Context` and `Usage` start the second line, as in the [screenshot](#icons-render-as-boxes).
 
 The default shows the model and project names as text and uses Unicode symbols such as `⎇` and `↻`. For model and folder icons, see [Icons Render As Boxes](#icons-render-as-boxes).
 
@@ -144,7 +144,7 @@ Set-Content -Encoding ascii -Path "~\.config\codex-hud\config.json" -Value '{"ic
 2. Point your terminal profile at that font family (e.g., iTerm2 → Settings → Profiles → Text → Font, VS Code `terminal.integrated.fontFamily`, `font-family` in `~/.config/ghostty/config`, or Windows Terminal → Settings → Profiles → Defaults → Appearance → Font face). Ghostty, WezTerm, and kitty include Nerd Font symbol fallbacks.
 3. Set `"icons": true` in your [config file](#config).
 
-<img src="assets/preview.png" alt="Codex status line with Nerd Font icons enabled" width="700">
+<img src="assets/preview.png" alt="Codex status line with Nerd Font icons in iTerm2, wrapped between its two groups" width="700">
 
 Over SSH, your local terminal draws the glyphs, so a font installed on the remote host has no effect.
 
