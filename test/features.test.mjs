@@ -2,7 +2,7 @@
 // running vs completed tool state, install command, and open-source companion files.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -278,11 +278,14 @@ test("doctor: reports healthy setup, warnings, failures and JSON output", async 
 
 test("doctor CLI: --doctor and --doctor --json run cleanly", () => {
   const home = tmp();
-  const out = execFileSync(process.execPath, [HUD, "--doctor", "--json"], {
+  // Exit code 1 only means a check failed (e.g. no Codex CLI on a CI machine); the report must still be valid.
+  const r = spawnSync(process.execPath, [HUD, "--doctor", "--json"], {
     env: { ...process.env, CODEX_HOME: home, CODEX_HUD_CONFIG: join(home, "none.json") },
     encoding: "utf8",
   });
-  const report = JSON.parse(out);
+  assert.ok(r.status === 0 || r.status === 1, r.stderr);
+  const report = JSON.parse(r.stdout);
+  assert.equal(r.status, report.ok ? 0 : 1);
   assert.equal(typeof report.ok, "boolean");
   assert.ok(Array.isArray(report.checks));
   assert.ok(report.icons.plain && report.icons.nerd);

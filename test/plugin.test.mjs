@@ -2,9 +2,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { delimiter, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HUD, NAME, PLUGIN_LIST_ARGS, configHasServer, pluginInstalled } from "../install.mjs";
 import { runDoctor } from "../src/doctor.mjs";
@@ -16,6 +16,17 @@ const mcp = json(".mcp.json");
 const market = json(".agents/plugins/marketplace.json");
 const pkg = json("package.json");
 const tmp = () => mkdtempSync(join(tmpdir(), "codex-hud-plugin-"));
+
+// runDoctor looks codex up on PATH before calling the injected `run`, so put a fake one there:
+// CI machines have no Codex CLI installed.
+function withFakeCodex(env = process.env) {
+  const bin = join(tmp(), "bin");
+  mkdirSync(bin);
+  const codex = join(bin, "codex");
+  writeFileSync(codex, "#!/bin/sh\nexit 0\n");
+  chmodSync(codex, 0o755);
+  return { ...env, PATH: `${bin}${delimiter}${env.PATH || ""}` };
+}
 
 test("plugin manifest: name and version agree with the package and the server", () => {
   assert.equal(plugin.name, NAME);
@@ -131,7 +142,7 @@ test("doctor: plugin install counts as registered; plugin + config entry is a du
     if (args[0] === "--version") return { ok: true, stdout: "codex-cli 0.171.0\n", stderr: "" };
     return { ok: false, stdout: "", stderr: "" };
   };
-  const doctor = (run) => runDoctor({ env: { ...process.env, CODEX_HOME: tmp() }, run, version: "0.1.0" });
+  const doctor = (run) => runDoctor({ env: { ...withFakeCodex(), CODEX_HOME: tmp() }, run, version: "0.1.0" });
 
   const viaPlugin = (await doctor(fake({ ok: false, stdout: "", stderr: "not found" }))).checks.find((c) => c.id === "mcp");
   assert.equal(viaPlugin.status, "ok");
@@ -146,7 +157,7 @@ test("doctor: plugin install counts as registered; plugin + config entry is a du
   const home = tmp();
   const cfg = join(home, "config.toml");
   writeFileSync(cfg, 'model = "x"\n');
-  const doctorIn = (run) => runDoctor({ env: { ...process.env, CODEX_HOME: home }, run, version: "0.1.0" });
+  const doctorIn = (run) => runDoctor({ env: { ...withFakeCodex(), CODEX_HOME: home }, run, version: "0.1.0" });
   const plain = (await doctorIn(fake(pluginGet))).checks.find((c) => c.id === "mcp");
   assert.equal(plain.status, "ok", plain.summary);
   assert.match(plain.summary, /^plugin codex-hud@codex-hud: node \.\/hud\.mjs$/);
@@ -165,7 +176,7 @@ test("doctor: relative server paths resolve against the server cwd, not the shel
     stderr: "",
   });
   const run = (cwd) => (cmd, args) => (args[0] === "mcp" ? get(cwd) : { ok: false, stdout: "", stderr: "" });
-  const check = async (cwd) => (await runDoctor({ env: { ...process.env, CODEX_HOME: tmp() }, run: run(cwd), version: "0" })).checks.find((c) => c.id === "mcp");
+  const check = async (cwd) => (await runDoctor({ env: { ...withFakeCodex(), CODEX_HOME: tmp() }, run: run(cwd), version: "0" })).checks.find((c) => c.id === "mcp");
   assert.equal((await check(ROOT)).status, "ok");
   const elsewhere = await check(tmp());
   assert.equal(elsewhere.status, "warn");
@@ -177,7 +188,7 @@ test("doctor: a registration through the removed bin/ launcher is flagged", asyn
     args[0] === "mcp"
       ? { ok: true, stdout: JSON.stringify({ transport: { command: "/bin/sh", args: [join(ROOT, "bin", "codex-hud.sh")] } }), stderr: "" }
       : { ok: false, stdout: "", stderr: "" };
-  const c = (await runDoctor({ env: { ...process.env, CODEX_HOME: tmp() }, run, version: "0" })).checks.find((x) => x.id === "mcp");
+  const c = (await runDoctor({ env: { ...withFakeCodex(), CODEX_HOME: tmp() }, run, version: "0" })).checks.find((x) => x.id === "mcp");
   assert.equal(c.status, "warn");
   assert.match(c.summary, /removed bin\/ launcher/);
   assert.match(c.hint, /node install\.mjs/);
