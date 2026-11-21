@@ -27,6 +27,11 @@ export const DEFAULTS = Object.freeze({
     "limits",
     "cost",
   ]),
+  // Segments kept together when the footer wraps; replaces "segments" when set, null = no grouping.
+  groups: Object.freeze([
+    Object.freeze(["model", "project"]),
+    Object.freeze(["context", "limits", "cost"]),
+  ]),
   barWidth: 8,
   // Nerd Font glyphs instead of plain unicode.
   icons: false,
@@ -76,12 +81,25 @@ export function sanitize(user) {
   if (!user || typeof user !== "object" || Array.isArray(user)) return cfg;
   if (Array.isArray(user.segments)) {
     cfg.segments = [...new Set(user.segments.filter((s) => SEGMENTS.includes(s)))];
+    cfg.groups = null; // a custom segment list without groups is not grouped
   }
+  if (user.groups === null) cfg.groups = null;
   for (const [key, [min, max]] of Object.entries(RANGES)) {
     const v = user[key];
     if (typeof v === "number" && Number.isFinite(v)) cfg[key] = Math.min(max, Math.max(min, Math.round(v)));
   }
   for (const key of BOOLEANS) if (typeof user[key] === "boolean") cfg[key] = user[key];
+  if (Array.isArray(user.groups)) {
+    const seen = new Set();
+    const groups = user.groups
+      .filter(Array.isArray)
+      .map((g) => g.filter((s) => SEGMENTS.includes(s) && !seen.has(s) && seen.add(s)))
+      .filter((g) => g.length);
+    if (groups.length) {
+      cfg.groups = groups;
+      cfg.segments = groups.flat();
+    }
+  }
   return cfg;
 }
 

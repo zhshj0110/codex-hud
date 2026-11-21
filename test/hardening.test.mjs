@@ -68,7 +68,7 @@ test("config: invalid config.json keeps the footer working", async () => {
     { CODEX_HUD_CONFIG: cfgFile, CODEX_HOME: dir },
   );
   const tree = JSON.parse(read.result.contents[0].text);
-  assert.match(strip(toAnsi(tree)), /gpt │ p │ Context █ 50%/);
+  assert.match(strip(toAnsi(tree)), /gpt │ p {3}Context █ 50%/);
 });
 
 // ---- UI limits at runtime ----

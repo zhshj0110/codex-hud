@@ -7,8 +7,10 @@
 **Default status line (`"icons": false`)**
 
 ```text
-gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
+gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1   Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
+
+When the terminal is too narrow for one line, the footer wraps between the two groups, so `Context` and `Usage` start the second line.
 
 The default shows the model and project names as text and uses Unicode symbols such as `⎇` and `↻`. For model and folder icons, see [Icons Render As Boxes](#icons-render-as-boxes).
 
@@ -264,6 +266,7 @@ Default config:
 ```json
 {
   "segments": ["model", "project", "context", "limits", "cost"],
+  "groups": [["model", "project"], ["context", "limits", "cost"]],
   "barWidth": 8,
   "icons": false,
   "allLimits": false,
@@ -283,6 +286,7 @@ Default config:
 Options:
 
 - `segments`: Ordered list of segments to display; omit any segment to hide it. Available segments: `model`, `mode`, `title`, `project`, `context`, `tokens`, `limits`, `cost`, `env`, `tools`, `session`, `state`. `mode`, `title`, `tokens`, `env`, `tools`, `session`, and `state` are off by default — add them to `segments` to enable them.
+- `groups`: Segments that stay together when the footer wraps (default `[["model", "project"], ["context", "limits", "cost"]]`). It replaces `segments`; setting `segments` without `groups`, or `"groups": null`, turns grouping off. Groups are spaced apart with no `│` between them. Codex wraps only when it runs out of width, so a wide terminal still shows one line; a narrow one breaks between groups, and inside a group only if that group alone is wider than the terminal. Codex has no line-break element for providers, so a fixed two-line layout is not possible.
 - `barWidth`: Progress bar width (1–40, default `8`).
 - `icons`: Use Nerd Font glyphs instead of plain Unicode (default `false`).
 - `allLimits`: Show all rate-limit buckets instead of only the primary `codex` bucket (default `false`).

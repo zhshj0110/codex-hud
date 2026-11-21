@@ -382,29 +382,44 @@ const segments = {
   },
 };
 
+// Spacing between groups, which carry no separator.
+export const GROUP_GAP = 3;
+
 export function render(state, { cfg, git = null, env = null, activity = null, contextWindow = null, rateLimits = null, now = Date.now() }) {
   if (!state || typeof state !== "object" || !state.thread || typeof state.thread !== "object") return null;
   const g = cfg.icons ? NERD : PLAIN;
   const ctx = { cfg, git, env, activity, contextWindow, rateLimits, now };
-  const items = [];
+  // Without "groups" items sit directly in the wrapping row, so Codex may wrap between any two.
+  // With it each group is its own wrapping row, which Codex moves to a new line as a block.
+  // Groups apply only when they list exactly cfg.segments (sanitize keeps them in step).
+  const grouped =
+    Array.isArray(cfg.groups) && cfg.groups.length > 0 && cfg.groups.every(Array.isArray) &&
+    cfg.groups.flat().join() === cfg.segments.join();
+  const groups = grouped ? cfg.groups : [cfg.segments];
+  const out = [];
   let prevName = null;
-  for (const name of cfg.segments) {
-    const fn = segments[name];
-    if (!fn) continue;
-    let el = null;
-    try {
-      el = fn(state, ctx, g);
-    } catch {
-      el = null; // a bad field in one segment must not blank the whole footer
+  for (const names of groups) {
+    const items = grouped ? [] : out;
+    for (const name of names) {
+      const fn = segments[name];
+      if (!fn) continue;
+      let el = null;
+      try {
+        el = fn(state, ctx, g);
+      } catch {
+        el = null; // a bad field in one segment must not blank the whole footer
+      }
+      if (!el) continue;
+      for (const e of Array.isArray(el) ? el : [el]) {
+        // No separator between groups: Codex may wrap there, which would leave it dangling.
+        if (items.length && prevName !== "limits") items.push(text(g.sep, "status-metadata"));
+        items.push(e);
+        prevName = name;
+      }
     }
-    if (!el) continue;
-    for (const e of Array.isArray(el) ? el : [el]) {
-      if (items.length && prevName !== "limits") items.push(text(g.sep, "status-metadata"));
-      items.push(e);
-      prevName = name;
-    }
+    if (grouped && items.length) out.push(row(items, 1, "wrap"));
   }
-  return items.length ? row(items, 1, "wrap") : null;
+  return out.length ? row(out, grouped ? GROUP_GAP : 1, "wrap") : null;
 }
 
 // Renders and guarantees the result fits Codex's limits: an oversize reply would stop polling.
@@ -414,7 +429,7 @@ export const FALLBACK_SEGMENTS = ["model", "context"];
 export function renderSafe(state, opts) {
   const tree = render(state, opts);
   if (checkLimits(tree).ok) return tree;
-  const small = render(state, { ...opts, cfg: { ...opts.cfg, segments: FALLBACK_SEGMENTS } });
+  const small = render(state, { ...opts, cfg: { ...opts.cfg, groups: null, segments: FALLBACK_SEGMENTS } });
   return checkLimits(small).ok ? small : null;
 }
 

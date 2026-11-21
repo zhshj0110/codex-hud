@@ -1,5 +1,6 @@
 {
   "segments": ["model", "project", "context", "limits", "cost"],
+  "groups": [["model", "project"], ["context", "limits", "cost"]],
   "barWidth": 8,
   "icons": false,
   "allLimits": false,

@@ -7,8 +7,10 @@
 **默认状态栏（`"icons": false`）**
 
 ```text
-gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1 │ Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
+gpt-5.5 high │ codex-hud │ ⎇ main* +1~2?1 ↑1   Context ███░░░░░ 43% 172k/400k │ Usage 5h ██░░░░░░ 23% ↻1h51m  7d ██████░░ ! 74% ↻3d5h
 ```
+
+终端宽度不够一行时，footer 会在两组之间折行，`Context` 和 `Usage` 从第二行开始。
 
 默认以纯文字显示模型和项目名，并使用 `⎇`、`↻` 等 Unicode 符号。模型和文件夹图标见[图标显示成方块](#图标显示成方块)。
 
@@ -264,6 +266,7 @@ Codex 0.171 加入了实验特性 `tui_extensions_statusline`，由 MCP server �
 ```json
 {
   "segments": ["model", "project", "context", "limits", "cost"],
+  "groups": [["model", "project"], ["context", "limits", "cost"]],
   "barWidth": 8,
   "icons": false,
   "allLimits": false,
@@ -283,6 +286,7 @@ Codex 0.171 加入了实验特性 `tui_extensions_statusline`，由 MCP server �
 配置项说明：
 
 - `segments`：段的显示顺序，删掉某项即隐藏该段。可用段：`model`、`mode`、`title`、`project`、`context`、`tokens`、`limits`、`cost`、`env`、`tools`、`session`、`state`。其中 `mode`、`title`、`tokens`、`env`、`tools`、`session`、`state` 默认不启用，按需加入 `segments` 即可。
+- `groups`：折行时保持在一起的段（默认 `[["model", "project"], ["context", "limits", "cost"]]`）。它会取代 `segments`；只设置 `segments` 而不设置 `groups`，或者设为 `"groups": null`，就不分组。组与组之间用空格隔开，不加 `│`。Codex 只在宽度不够时才折行，所以宽终端仍显示一行；窄终端会在组与组之间断开，只有单个组本身比终端还宽时才在组内断开。Codex 没有给 provider 提供换行节点，所以无法固定显示两行。
 - `barWidth`：进度条宽度（1–40，默认 `8`）。
 - `icons`：改用 Nerd Font 图标（默认 `false`）。
 - `allLimits`：显示所有额度桶，而不只是主 `codex` 桶（默认 `false`）。

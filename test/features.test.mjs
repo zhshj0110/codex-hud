@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { DEFAULTS, SEGMENTS, configSource, sanitize } from "../src/config.mjs";
 import { collectEnv, collectLatestRateLimits, countMcpServers } from "../src/env.mjs";
 import { parseStatus } from "../src/git.mjs";
-import { checkLimits, clip, oneLine, render, toAnsi } from "../src/render.mjs";
+import { GROUP_GAP, checkLimits, clip, oneLine, render, toAnsi } from "../src/render.mjs";
 import { applyLine, emptyActivity, runningCounts } from "../src/transcript.mjs";
 import { HUD, MANAGED_NODE, PROVIDER_LINE, launchCommand, readProvider } from "../install.mjs";
 import { formatReport, runDoctor } from "../src/doctor.mjs";
@@ -486,4 +486,44 @@ test("env & render: falls back to latest rollout rate_limits when snapshot accou
     now: 2000 * 1000,
   });
   assert.equal(strip(toAnsi(tree)), "Usage 7d █░░░░░░░ 12% ↻1d ⚙ exec_command×2");
+});
+
+// ---- groups ----
+
+test("config: groups are sanitized, replace segments, and are on by default", () => {
+  assert.deepEqual(sanitize({}).groups, [["model", "project"], ["context", "limits", "cost"]]);
+  assert.deepEqual(DEFAULTS.groups.flat(), DEFAULTS.segments);
+  const cfg = sanitize({ segments: ["cost"], groups: [["model", "nope", "project"], "context", [], ["model", "context"]] });
+  assert.deepEqual(cfg.groups, [["model", "project"], ["context"]]);
+  assert.deepEqual(cfg.segments, ["model", "project", "context"]);
+  // A custom segment list on its own, or groups: null, turns grouping off.
+  assert.equal(sanitize({ segments: ["model", "cost"] }).groups, null);
+  assert.equal(sanitize({ groups: null }).groups, null);
+  assert.deepEqual(sanitize({ groups: null }).segments, DEFAULTS.segments);
+  // Unusable groups keep the defaults.
+  assert.deepEqual(sanitize({ groups: [[], ["nope"]] }).groups, DEFAULTS.groups);
+  assert.deepEqual(sanitize({ groups: "model" }).groups, DEFAULTS.groups);
+});
+
+test("render: each group is its own wrapping row, with no separator between groups", () => {
+  const tree = render(baseState(), { cfg: sanitize({ groups: [["model"], ["context"]] }) });
+  assert.equal(tree.type, "row");
+  assert.deepEqual(tree.props, { gap: GROUP_GAP, wrap: "wrap" });
+  assert.equal(tree.children.length, 2);
+  for (const g of tree.children) assert.deepEqual([g.type, g.props.wrap], ["row", "wrap"]);
+  assert.equal(strip(toAnsi(tree)), "gpt-5.5   Context ███░░░░░ 40%");
+  assert.ok(checkLimits(tree).ok);
+
+  // Separators still sit between segments inside a group.
+  const inner = render(baseState(), { cfg: sanitize({ groups: [["model", "context"]] }) });
+  assert.equal(strip(toAnsi(inner)), "gpt-5.5 │ Context ███░░░░░ 40%");
+
+  // A group whose segments all render nothing leaves no empty row.
+  const sparse = render(baseState({ agent: { state: "ready" } }), { cfg: sanitize({ groups: [["model"], ["state"]] }) });
+  assert.equal(sparse.children.length, 1);
+
+  // Groups that disagree with segments (an unsanitized cfg) fall back to the flat layout.
+  const flat = render(baseState(), { cfg: { ...DEFAULTS, segments: ["model", "context"] } });
+  assert.equal(strip(toAnsi(flat)), "gpt-5.5 │ Context ███░░░░░ 40%");
+  assert.equal(flat.props.gap, 1);
 });
